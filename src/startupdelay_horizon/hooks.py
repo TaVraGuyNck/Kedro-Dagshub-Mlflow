@@ -3,7 +3,6 @@ from kedro_mlflow.framework.hooks import MlflowHook
 from pyspark.sql import SparkSession
 from pyspark import SparkConf
 import mlflow
-import os
 import warnings
 
 
@@ -24,9 +23,6 @@ class SparkHooks:
 
 
 class CustomMlflowHook(MlflowHook):
-    """
-    Configure MLflow tracking URI from .env and preserve default MlflowHook behavior.
-    """
     @hook_impl
     def after_context_created(self, context):
         tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
@@ -36,6 +32,7 @@ class CustomMlflowHook(MlflowHook):
             warnings.warn("MLFLOW_TRACKING_URI not set — using default local MLflow store.")
         super().after_context_created(context)
 
+
 class MLflowTagHook:
     """
     Add custom MLflow tags before pipeline run.
@@ -44,7 +41,7 @@ class MLflowTagHook:
     @hook_impl
     def before_pipeline_run(self, run_params):
         mlflow.set_tag("experiment", "baseline")
-        mlflow.set_tag("run_type", "catboost")  # Change if dynamic
+        mlflow.set_tag("run_type", "catboost")  # Change if needed
         mlflow.set_tag("owner", "tanguy")
         mlflow.set_tag("pipeline", run_params.get("pipeline_name", "__default__"))
         mlflow.set_tag("run_id", run_params["run_id"])
