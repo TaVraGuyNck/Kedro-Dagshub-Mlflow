@@ -4,6 +4,7 @@ from pyspark.sql import SparkSession
 from pyspark import SparkConf
 import mlflow
 import os
+import warnings
 
 
 class SparkHooks:
@@ -22,34 +23,33 @@ class SparkHooks:
         spark.sparkContext.setLogLevel("WARN")
 
 
-class PlainMlflowHook(MlflowHook):
+class CustomMlflowHook(MlflowHook):
     """
-    Set DagsHub tracking URI using environment variables (no dotenv).
-    Requires MLFLOW_TRACKING_USERNAME and optionally MLFLOW_TRACKING_PASSWORD or token.
+    Configure MLflow tracking URI from .env and preserve default MlflowHook behavior.
     """
-
     @hook_impl
     def after_context_created(self, context):
-        mlflow.set_tracking_uri("https://dagshub.com/fienme/Modern-Data-Analytics.mlflow")
-        # Do not call super() unless you rely on additional MlflowHook logic
-        # super().after_context_created(context)
+        tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
+        if tracking_uri:
+            mlflow.set_tracking_uri(tracking_uri)
+        else:
+            warnings.warn("MLFLOW_TRACKING_URI not set — using default local MLflow store.")
+        super().after_context_created(context)
 
-
-class TagAndParamHook:
+class MLflowTagHook:
     """
-    Add MLflow tags for filtering.
+    Add custom MLflow tags before pipeline run.
     """
 
     @hook_impl
     def before_pipeline_run(self, run_params):
-        mlflow.set_experiment("kedro-startupdelay")
         mlflow.set_tag("experiment", "baseline")
-        mlflow.set_tag("run_type", "catboost")
+        mlflow.set_tag("run_type", "catboost")  # Change if dynamic
         mlflow.set_tag("owner", "tanguy")
         mlflow.set_tag("pipeline", run_params.get("pipeline_name", "__default__"))
         mlflow.set_tag("run_id", run_params["run_id"])
 
 
-# Register the hooks
-mlflow_hook = PlainMlflowHook()
-HOOKS = (SparkHooks(), mlflow_hook, TagAndParamHook())
+# Register hooks
+mlflow_hook = CustomMlflowHook()
+HOOKS = (SparkHooks(), mlflow_hook, MLflowTagHook())

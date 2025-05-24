@@ -2,31 +2,23 @@
 from the Kedro defaults. For further information, including these default values, see
 https://docs.kedro.org/en/stable/kedro_project_setup/settings.html."""
 
-# Instantiated project hooks.
-# from startupdelay_horizon.hooks import SparkHooks  # noqa: E402
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-# Hooks are executed in a Last-In-First-Out (LIFO) order.
-# HOOKS = (SparkHooks(),)
+# ✅ Load .env from the project root (above `src/`)
+project_root = Path(__file__).resolve().parents[1]
+dotenv_path = project_root / ".env"
+load_dotenv(dotenv_path)
 
-# Installed plugins for which to disable hook auto-registration.
-# DISABLE_HOOKS_FOR_PLUGINS = ("kedro-viz",)
-
-# Class that manages storing KedroSession data.
-# from kedro.framework.session.store import BaseSessionStore
-# SESSION_STORE_CLASS = BaseSessionStore
-# Keyword arguments to pass to the `SESSION_STORE_CLASS` constructor.
-# SESSION_STORE_ARGS = {
-#     "path": "./sessions"
-# }
-
-# Directory that holds configuration.
-# CONF_SOURCE = "conf"
+# Optional debug print to verify it worked:
+# print("MLFLOW URI:", os.getenv("MLFLOW_TRACKING_URI"))
 
 # Class that manages how configuration is loaded.
 from kedro.config import OmegaConfigLoader  # noqa: E402
 
 CONFIG_LOADER_CLASS = OmegaConfigLoader
-# Keyword arguments to pass to the `CONFIG_LOADER_CLASS` constructor.
+
 CONFIG_LOADER_ARGS = {
     "base_env": "base",
     "default_run_env": "local",
@@ -35,11 +27,4 @@ CONFIG_LOADER_ARGS = {
     }
 }
 
-# Class that manages Kedro's library components.
-# from kedro.framework.context import KedroContext
-# CONTEXT_CLASS = KedroContext
-
-# Class that manages the Data Catalog.
-# from kedro.io import DataCatalog
-# DATA_CATALOG_CLASS = DataCatalog
-
+# Other optional settings (hooks, context, catalog) can be defined here as needed.

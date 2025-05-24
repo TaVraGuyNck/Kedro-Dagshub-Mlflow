@@ -6,3 +6,4 @@ kedro[jupyter]~=0.19.12
 notebook
 scikit-learn~=1.5.1
 dagshub>=0.3.23
+

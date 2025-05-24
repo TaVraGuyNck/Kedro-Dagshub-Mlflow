@@ -1,7 +1,7 @@
 {
   "name": "Kedro + MLflow",
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile.dev"
   },
   "customizations": {
     "vscode": {
@@ -14,6 +14,6 @@
       ]
     }
   },
-  "postCreateCommand": "pip install -e .",
+  "postCreateCommand": "pip install -e . && pip install python-dotenv",
   "workspaceFolder": "/workspaces/Modern-Data-Analytics"
 }
