@@ -2,6 +2,9 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from xgboost import XGBRegressor
+import mlflow
+import joblib
+import os
 
 def preprocess_for_xgboost(df: pd.DataFrame) -> pd.DataFrame:
     le_pillar = LabelEncoder()
@@ -36,4 +39,17 @@ def split_xgboost_data(df: pd.DataFrame):
 def train_xgboost_model(X_train, y_train, xgb_params):
     model = XGBRegressor(**xgb_params)
     model.fit(X_train, y_train)
-    return model, model 
+
+    # Save model locally
+    os.makedirs("data/06_models", exist_ok=True)
+    model_path = "data/06_models/xgb_model_mlflow.pkl"
+    joblib.dump(model, model_path)
+
+    # Log to MLflow
+    mlflow.set_tag("model_type", "xgboost")
+    for key, value in xgb_params.items():
+        mlflow.log_param(f"xgb_{key}", value)
+    mlflow.log_artifact(model_path)
+    mlflow.log_metric("train_score", model.score(X_train, y_train))
+
+    return model, model
