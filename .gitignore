@@ -23,7 +23,7 @@ data/**
 !data/01_raw/project.json
 
 # ignore catboost_info*
-catboost_info*
+catboost_info/*
 
 # ignore kedro-viz metadata
 .viz
