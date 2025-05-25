@@ -1,30 +1,25 @@
-FROM mcr.microsoft.com/devcontainers/python:3.9
+FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
-# Install system dependencies
+# Install dependencies for pyenv and Python build
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    git \
-    curl \
-    graphviz \
-    && rm -rf /var/lib/apt/lists/*
+    build-essential curl git libssl-dev zlib1g-dev \
+    libbz2-dev libreadline-dev libsqlite3-dev wget llvm \
+    libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
+    libffi-dev liblzma-dev python3-pip && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install Python packages
-RUN pip install --upgrade pip && \
-    pip install \
-    kedro==0.19.12 \
-    kedro-mlflow \
-    mlflow \
-    ipykernel \
-    jupyterlab \
-    xgboost \
-    catboost \
-    pandas \
-    matplotlib \
-    seaborn \
-    python-dotenv
+# Install pyenv
+ENV PYENV_ROOT="/root/.pyenv"
+ENV PATH="$PYENV_ROOT/bin:$PATH"
+RUN curl https://pyenv.run | bash
 
-# Set working directory
-WORKDIR /workspaces/Modern-Data-Analytics
+# Install Python 3.9.13 and set as global version
+RUN /bin/bash -c "source $PYENV_ROOT/bin/pyenv && \
+    pyenv install 3.9.13 && \
+    pyenv global 3.9.13"
 
-# Optional: copy the .env if you're setting secrets like MLFLOW_TRACKING_URI
-# COPY .env .env
+# Ensure the PATH is set correctly
+ENV PATH="$PYENV_ROOT/versions/3.9.13/bin:$PATH"
+
+# Upgrade pip and install Jupyter kernel
+RUN pip install --upgrade pip ipykernel

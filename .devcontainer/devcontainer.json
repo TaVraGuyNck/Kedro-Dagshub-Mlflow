@@ -1,12 +1,12 @@
 {
-  "name": "Kedro + MLflow",
+  "name": "Kedro + MLflow (Python 3.9.13)",
   "build": {
-    "dockerfile": "Dockerfile.dev"
+    "dockerfile": "Dockerfile"
   },
   "customizations": {
     "vscode": {
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python"
+        "python.defaultInterpreterPath": "/root/.pyenv/versions/3.9.13/bin/python"
       },
       "extensions": [
         "ms-python.python",
@@ -14,6 +14,6 @@
       ]
     }
   },
-  "postCreateCommand": "pip install -e . && pip install python-dotenv",
+  "postCreateCommand": "pip install -e . && pip install python-dotenv && python -m ipykernel install --user --name python3.9.13",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}"
 }
