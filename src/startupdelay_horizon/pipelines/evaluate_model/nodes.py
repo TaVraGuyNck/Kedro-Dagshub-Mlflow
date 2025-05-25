@@ -4,6 +4,9 @@ from catboost import CatBoostRegressor
 from xgboost import XGBRegressor
 from startupdelay_horizon.metrics import regression_metrics
 import mlflow
+import shap
+import matplotlib.pyplot as plt
+import os
 
 def evaluate_xgb_model(
     xgb_model: XGBRegressor,
@@ -38,6 +41,40 @@ def evaluate_cb_point_model(
 
     return pd.DataFrame([metrics])
 
+def compute_shap_values(model, preprocessor, X_test_raw):
+    # Apply preprocessing
+    X_test = preprocessor.transform(X_test_raw)
+
+    # Compute SHAP values
+    explainer = shap.Explainer(model)
+    shap_values = explainer(X_test)
+
+    # Generate beeswarm plot
+    plt.figure()
+    shap_plot = shap.plots.beeswarm(shap_values, show=False)
+
+    # Log to MLflow (optional)
+    
+    plt.savefig("data/08_reporting/shap_beeswarm_xgb.png", bbox_inches="tight")
+    mlflow.log_artifact("data/08_reporting/shap_beeswarm_xgb.png")
+    
+    return plt.gcf()  
+
+def compute_cb_shap_values(model, preprocessor, X_test_raw):
+    X_test = preprocessor.transform(X_test_raw)
+
+    explainer = shap.Explainer(model)
+    shap_values = explainer(X_test)
+
+    plt.figure()
+    shap.plots.beeswarm(shap_values, show=False)
+    plt.savefig("data/08_reporting/shap_beeswarm_cb.png", bbox_inches="tight")
+    mlflow.log_artifact("data/08_reporting/shap_beeswarm_cb.png")
+
+    return plt.gcf()
+
+def transform_cb_X_test(cb_preprocessor, cb_X_test_raw):
+    return cb_preprocessor.transform(cb_X_test_raw)
 
 
 

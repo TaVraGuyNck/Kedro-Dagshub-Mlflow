@@ -79,8 +79,33 @@ def preprocess(project_df, programme_df, org_df) -> pd.DataFrame:
     expected_cols = [
         "id", "startupDelay", "totalCost", "totalCostzero",
         "ecMaxContribution", "duration", "contRatio",
-        "pillar", "countryCoor", "numberOrg"
+        "pillar", "countryCoor", "numberOrg", "fundingScheme" 
     ]
     selected = project_df.reindex(columns=[col for col in expected_cols if col in project_df.columns])
 
     return selected
+
+
+def impute_missing(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
+    # Drop rows with missing target
+    df = df[df["startupDelay"].notna()]
+
+    # Separate by dtype
+    num_cols = df.select_dtypes(include=[np.number]).columns
+    cat_cols = df.select_dtypes(include=["object", "category"]).columns
+
+    # Impute numerics with median
+    for col in num_cols:
+        df[col] = df[col].fillna(df[col].median())
+
+    # Impute categoricals with "missing"
+    for col in cat_cols:
+        df[col] = df[col].fillna("missing")
+
+    # Remove index feature    
+
+    df = df.reset_index(drop=True)
+
+    return df
