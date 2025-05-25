@@ -16,7 +16,7 @@
 
 - **Node:** `xgb_training_node`
   - 📥 Inputs: xgb_X_train, xgb_y_train, params:xgb_params
-  - 📤 Outputs: xgb_model
+  - 📤 Outputs: xgb_model, xgb_model_mlflow
   - 🧠 Function: `train_xgboost_model`
 
 ### `train_catboost`
@@ -33,7 +33,7 @@
 
 - **Node:** `cb_training_node`
   - 📥 Inputs: cb_X_train, cb_y_train, cb_X_test, cb_y_test, params:cb_params, cb_cat_features
-  - 📤 Outputs: cb_model
+  - 📤 Outputs: cb_model, cb_model_mlflow
   - 🧠 Function: `train_catboost_model`
 
 ### `evaluate_model`
@@ -91,12 +91,12 @@
 
 - **Node:** `cb_training_node`
   - 📥 Inputs: cb_X_train, cb_y_train, cb_X_test, cb_y_test, params:cb_params, cb_cat_features
-  - 📤 Outputs: cb_model
+  - 📤 Outputs: cb_model, cb_model_mlflow
   - 🧠 Function: `train_catboost_model`
 
 - **Node:** `xgb_training_node`
   - 📥 Inputs: xgb_X_train, xgb_y_train, params:xgb_params
-  - 📤 Outputs: xgb_model
+  - 📤 Outputs: xgb_model, xgb_model_mlflow
   - 🧠 Function: `train_xgboost_model`
 
 - **Node:** `evaluate_cb_point_node`
@@ -127,6 +127,7 @@
 - `xgb_y_train`: **kedro_datasets.pandas.ParquetDataset** → `data/05_model_input/xgb_y_train.parquet`
 - `xgb_y_test`: **kedro_datasets.pandas.ParquetDataset** → `data/05_model_input/xgb_y_test.parquet`
 - `xgb_model`: **pickle.PickleDataset** → `data/06_models/xgb_model.pkl`
+- `xgb_model_mlflow`: **pickle.PickleDataset** → `data/06_models/xgb_model_mlflow.pkl`
 - `cb_input_table`: **kedro_datasets.pandas.ParquetDataset** → `data/05_model_input/cb_input_table.parquet`
 - `cb_X_train`: **kedro_datasets.pandas.ParquetDataset** → `data/05_model_input/cb_X_train.parquet`
 - `cb_X_test`: **kedro_datasets.pandas.ParquetDataset** → `data/05_model_input/cb_X_test.parquet`
@@ -137,6 +138,7 @@
 - `metrics_xgb`: **kedro_datasets.pandas.ParquetDataset** → `data/08_reporting/metrics_xgb.parquet`
 - `metrics_cb`: **kedro_datasets.pandas.ParquetDataset** → `data/08_reporting/metrics_cb.parquet`
 - `model_comparison_table`: **kedro_datasets.pandas.ParquetDataset** → `data/08_reporting/model_comparison.parquet`
+- `confusion_matrix_plot`: **kedro_datasets.matplotlib.MatplotlibWriter** → `data/08_reporting/confusion_matrix.png`
 
 ## 🧠 Node Function Code (Top-Level Only)
 
@@ -146,7 +148,15 @@ def preprocess_for_xgboost(df: pd.DataFrame) -> pd.DataFrame:
     le_pillar = LabelEncoder()
     df["pillar_encoded"] = le_pillar.fit_transform(df["pillar"].astype(str))
 
+    # save encoders for lambda function
+    os.makedirs("data/06_models/encoders", exist_ok=True)
+    joblib.dump(le_pillar, "data/06_models/encoders/pillar_encoder.pkl")
+
     top_countries = df["countryCoor"].value_counts().nlargest(10).index
+    
+    # save country dummies for lambda function
+    joblib.dump(top_countries.tolist(), "data/06_models/encoders/top_countries.pkl")
+
     df["country_clean"] = df["countryCoor"].where(df["countryCoor"].isin(top_countries), "Other")
     country_dummies = pd.get_dummies(df["country_clean"], prefix="country")
 
@@ -177,10 +187,30 @@ def split_xgboost_data(df: pd.DataFrame):
 
 ### `train_xgboost_model`
 ```python
-def train_xgboost_model(X_train: pd.DataFrame, y_train: pd.Series, xgb_params: dict):
+def train_xgboost_model(X_train, y_train, xgb_params):
     model = XGBRegressor(**xgb_params)
     model.fit(X_train, y_train)
-    return model
+
+    # Save 2 versions of model locally
+    os.makedirs("data/06_models", exist_ok=True)
+    kedro_path = "data/06_models/xgb_model.pkl"
+    mlflow_path= "data/06_models/xgb_model_mlflow.pkl"
+
+    joblib.dump(model, kedro_path)
+    joblib.dump(model, mlflow_path)
+ 
+    # save feature list for lambda function
+    feature_columns = X_train.columns.tolist()
+    joblib.dump(feature_columns, "data/06_models/expected_columns.pkl")
+
+    # Log to MLflow
+    mlflow.set_tag("model_type", "xgboost")
+    for key, value in xgb_params.items():
+        mlflow.log_param(f"xgb_{key}", value)
+    mlflow.log_artifact(mlflow_path)
+    mlflow.log_metric("train_score", model.score(X_train, y_train))
+
+    return model, model
 ```
 
 ### `preprocess_for_catboost`
@@ -217,27 +247,63 @@ def split_catboost_data(df: pd.DataFrame):
 def train_catboost_model(X_train, y_train, X_valid, y_valid, catboost_params, cat_features):
     model = CatBoostRegressor(**catboost_params)
     model.fit(
-        X_train, y_train,
+        X_train,
+        y_train,
         eval_set=(X_valid, y_valid),
         cat_features=cat_features,
         verbose=0
     )
-    return model
+
+    # Save model locally
+    os.makedirs("data/06_models", exist_ok=True)
+    model_path = "data/06_models/cb_model_mlflow.pkl"
+    joblib.dump(model, model_path)
+
+    # Log to MLflow
+    mlflow.set_tag("model_type", "catboost")
+    for key, value in catboost_params.items():
+        mlflow.log_param(f"cb_{key}", value)
+    mlflow.log_artifact(model_path)
+    mlflow.log_metric("train_score", model.score(X_train, y_train))
+
+    return model, model
 ```
 
 ### `evaluate_cb_point_model`
 ```python
-def evaluate_cb_point_model(cb_model: CatBoostRegressor, cb_X_test: pd.DataFrame, cb_y_test: pd.Series) -> pd.DataFrame:
+def evaluate_cb_point_model(
+    cb_model: CatBoostRegressor,
+    cb_X_test: pd.DataFrame,
+    cb_y_test: pd.Series
+) -> pd.DataFrame:
     y_pred = cb_model.predict(cb_X_test)
+
+    # Compute regression metrics using your custom utility
     metrics = regression_metrics(cb_y_test, y_pred)
+
+    # Log each metric to MLflow
+    for key, value in metrics.items():
+        mlflow.log_metric(f"cb_{key}", value)
+
     return pd.DataFrame([metrics])
 ```
 
 ### `evaluate_xgb_model`
 ```python
-def evaluate_xgb_model(xgb_model: XGBRegressor, xgb_X_test: pd.DataFrame, xgb_y_test: pd.Series) -> pd.DataFrame:
+def evaluate_xgb_model(
+    xgb_model: XGBRegressor,
+    xgb_X_test: pd.DataFrame,
+    xgb_y_test: pd.Series
+) -> pd.DataFrame:
     y_pred = xgb_model.predict(xgb_X_test)
+    
+    # Compute metrics (assuming this is a custom util that returns a dict)
     metrics = regression_metrics(xgb_y_test, y_pred)
+
+    # Log each metric to MLflow
+    for key, value in metrics.items():
+        mlflow.log_metric(f"xgb_{key}", value)
+
     return pd.DataFrame([metrics])
 ```
 
@@ -245,13 +311,13 @@ def evaluate_xgb_model(xgb_model: XGBRegressor, xgb_X_test: pd.DataFrame, xgb_y_
 ```python
 def compare_model_metrics(metrics_xgb, metrics_cb):
     df_xgb = metrics_xgb.copy()
-    df_cb_point = metrics_cb.copy()
+    df_cb = metrics_cb.copy()
 
     df_xgb["model"] = "xgboost"
-    df_cb_point["model"] = "catboost_point"
+    df_cb["model"] = "catboost_point"
     
 
-    result = pd.concat([df_xgb, df_cb_point, df_cb_quantile], ignore_index=True)
+    result = pd.concat([df_xgb, df_cb], ignore_index=True)
     return result  # guaranteed to be a single DataFrame
 ```
 
