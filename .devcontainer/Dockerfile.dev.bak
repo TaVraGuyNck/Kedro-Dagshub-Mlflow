@@ -1,0 +1,30 @@
+FROM mcr.microsoft.com/devcontainers/python:3.9
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    curl \
+    graphviz \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages
+RUN pip install --upgrade pip && \
+    pip install \
+    kedro==0.19.12 \
+    kedro-mlflow \
+    mlflow \
+    ipykernel \
+    jupyterlab \
+    xgboost \
+    catboost \
+    pandas \
+    matplotlib \
+    seaborn \
+    python-dotenv
+
+# Set working directory
+WORKDIR /workspaces/Modern-Data-Analytics
+
+# Optional: copy the .env if you're setting secrets like MLFLOW_TRACKING_URI
+# COPY .env .env
