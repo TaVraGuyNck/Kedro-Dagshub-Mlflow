@@ -1,6 +1,8 @@
 {
   "name": "Kedro + MLflow",
-  "image": "mcr.microsoft.com/devcontainers/python:3.9",
+  "build": {
+    "dockerfile": "Dockerfile.dev"
+  },
   "customizations": {
     "vscode": {
       "settings": {
