@@ -10,7 +10,15 @@ def preprocess_for_xgboost(df: pd.DataFrame) -> pd.DataFrame:
     le_pillar = LabelEncoder()
     df["pillar_encoded"] = le_pillar.fit_transform(df["pillar"].astype(str))
 
+    # new line - save encoders for lambda function
+    os.makedirs("data/06_models/encoders", exist_ok=True)
+    joblib.dump(le_pillar, "data/06_models/encoders/pillar_encoder.pkl")
+
     top_countries = df["countryCoor"].value_counts().nlargest(10).index
+    
+    #new line - save country dummies for lambda function
+    joblib.dump(top_countries.tolist(), "data/06_models/encoders/top_countries.pkl")
+
     df["country_clean"] = df["countryCoor"].where(df["countryCoor"].isin(top_countries), "Other")
     country_dummies = pd.get_dummies(df["country_clean"], prefix="country")
 
