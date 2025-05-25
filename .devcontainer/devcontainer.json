@@ -15,5 +15,5 @@
     }
   },
   "postCreateCommand": "pip install -e . && pip install python-dotenv",
-  "workspaceFolder": "/workspaces/Modern-Data-Analytics"
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}"
 }
