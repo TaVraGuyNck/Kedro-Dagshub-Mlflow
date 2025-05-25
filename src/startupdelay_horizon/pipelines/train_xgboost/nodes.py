@@ -10,13 +10,13 @@ def preprocess_for_xgboost(df: pd.DataFrame) -> pd.DataFrame:
     le_pillar = LabelEncoder()
     df["pillar_encoded"] = le_pillar.fit_transform(df["pillar"].astype(str))
 
-    # new line - save encoders for lambda function
+    # save encoders for lambda function
     os.makedirs("data/06_models/encoders", exist_ok=True)
     joblib.dump(le_pillar, "data/06_models/encoders/pillar_encoder.pkl")
 
     top_countries = df["countryCoor"].value_counts().nlargest(10).index
     
-    #new line - save country dummies for lambda function
+    # save country dummies for lambda function
     joblib.dump(top_countries.tolist(), "data/06_models/encoders/top_countries.pkl")
 
     df["country_clean"] = df["countryCoor"].where(df["countryCoor"].isin(top_countries), "Other")
@@ -48,16 +48,23 @@ def train_xgboost_model(X_train, y_train, xgb_params):
     model = XGBRegressor(**xgb_params)
     model.fit(X_train, y_train)
 
-    # Save model locally
+    # Save 2 versions of model locally
     os.makedirs("data/06_models", exist_ok=True)
-    model_path = "data/06_models/xgb_model_mlflow.pkl"
-    joblib.dump(model, model_path)
+    kedro_path = "data/06_models/xgb_model.pkl"
+    mlflow_path= "data/06_models/xgb_model_mlflow.pkl"
+
+    joblib.dump(model, kedro_path)
+    joblib.dump(model, mlflow_path)
+ 
+    # save feature list for lambda function
+    feature_columns = X_train.columns.tolist()
+    joblib.dump(feature_columns, "data/06_models/expected_columns.pkl")
 
     # Log to MLflow
     mlflow.set_tag("model_type", "xgboost")
     for key, value in xgb_params.items():
         mlflow.log_param(f"xgb_{key}", value)
-    mlflow.log_artifact(model_path)
+    mlflow.log_artifact(mlflow_path)
     mlflow.log_metric("train_score", model.score(X_train, y_train))
 
     return model, model
