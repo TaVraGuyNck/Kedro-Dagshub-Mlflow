@@ -38,6 +38,10 @@ xgb_model:
   type: pickle.PickleDataset
   filepath: data/06_models/xgb_model.pkl
 
+xgb_model_mlflow:
+  type: pickle.PickleDataset
+  filepath: data/06_models/xgb_model_mlflow.pkl
+
 cb_input_table:
   type: kedro_datasets.pandas.ParquetDataset
   filepath: data/05_model_input/cb_input_table.parquet
