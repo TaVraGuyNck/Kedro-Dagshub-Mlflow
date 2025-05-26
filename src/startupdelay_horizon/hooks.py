@@ -1,24 +1,24 @@
 from kedro.framework.hooks import hook_impl
-import logging
+import mlflow
 
-logger = logging.getLogger(__name__)
+class MLflowPipelineHook:
+    def __init__(self):
+        self.active_run = None
 
-# Optional Spark hook, keep only if you're using Spark
-class SparkHooks:
     @hook_impl
-    def after_context_created(self, context):
-        from pyspark.sql import SparkSession
-        from pyspark import SparkConf
+    def before_pipeline_run(self, run_params, pipeline, catalog):
+        # Here is where a pipeline-wide MLflow run starts!
+        self.active_run = mlflow.start_run(run_name=run_params["pipeline_name"])
+        mlflow.set_tag("kedro.pipeline", run_params["pipeline_name"])
 
-        parameters = context.config_loader["spark"]
-        spark_conf = SparkConf().setAll(parameters.items())
-        spark = (
-            SparkSession.builder.appName(context.project_path.name)
-            .enableHiveSupport()
-            .config(conf=spark_conf)
-            .getOrCreate()
-        )
-        spark.sparkContext.setLogLevel("WARN")
+    @hook_impl
+    def after_pipeline_run(self, run_params, pipeline, catalog):
+        if self.active_run:
+            mlflow.end_run()
+            self.active_run = None
 
-# Register only Spark hooks (safe to extend later)
-HOOKS = ()
+    @hook_impl
+    def on_pipeline_error(self, error, run_params, pipeline, catalog):
+        if self.active_run:
+            mlflow.end_run()
+            self.active_run = None

@@ -3,6 +3,7 @@ from the Kedro defaults. For further information, including these default values
 https://docs.kedro.org/en/stable/kedro_project_setup/settings.html."""
 
 from kedro.config import OmegaConfigLoader
+from .hooks import MLflowPipelineHook
 
 CONFIG_LOADER_CLASS = OmegaConfigLoader
 
@@ -15,5 +16,4 @@ CONFIG_LOADER_ARGS = {
     },
 }
 
-# Optional: if you're still using SparkHooks
-from startupdelay_horizon.hooks import HOOKS
+HOOKS = (MLflowPipelineHook(),)

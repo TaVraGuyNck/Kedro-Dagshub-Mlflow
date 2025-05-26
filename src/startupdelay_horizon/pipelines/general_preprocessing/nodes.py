@@ -109,3 +109,21 @@ def impute_missing(df: pd.DataFrame) -> pd.DataFrame:
     df = df.reset_index(drop=True)
 
     return df
+
+from sklearn.model_selection import train_test_split
+import pandas as pd
+
+def split_data(df: pd.DataFrame):
+    X = df.drop(columns=["startupDelay", "id"])
+    y = df["startupDelay"]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    return (
+        X_train,
+        X_test,
+        y_train.to_frame(name="startupDelay"),
+        y_test.to_frame(name="startupDelay"),
+    )
