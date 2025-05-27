@@ -77,12 +77,15 @@ countries_dropdownmenu = {
     }
 }
 
+# for picture
+here = Path(__file__).parent
+
 # UI definition 
 app_ui = ui.page_fluid(
 
     # header picture
     ui.div(
-        ui.img(src="horizon_banner.png", width="100%", height="auto"),
+        ui.img(src= here / "horizon_banner.png", width="500px", height="100px"),
         style="margin-bottom: 20px;"
     ),
 
@@ -98,15 +101,14 @@ app_ui = ui.page_fluid(
         # Left column: Paragraph/text content
         ui.column(6,
             ui.div(
-                ui.p("""
-                    text text text  
-                    text text text text  
-                    text text text text text  
-                    text text text text text text text text text text text text  
-                    text text vvvvtext text text text text text text text text text  
-                    text text text text text text text text text text text text  
-                    text text text text text text text text text text text text  
-                    text text text text text text text text text text text text"""),
+                ui.input_text_area(cols=50, rows=8, id="descrption", label="Description",
+                                   placeholder="This application predicts the startup delay of projects funded by the Europe" \
+                                   " Horizon 2021-2027 programme. The prediction is based on various project parameters such as total cost," \
+                                   " maximum EU contribution, number of participating organizations, duration, and the legal basis of the project. " \
+                                   "Please fill in the details on the right to get a prediction."
+                                      "The prediction is based on a machine learning model trained on historical project data. " \
+                                   "The model considers factors such as the total cost of the project, the maximum EU contribution, " \
+                                    ),
                 style="padding-right: 20px;"
             ),
 
