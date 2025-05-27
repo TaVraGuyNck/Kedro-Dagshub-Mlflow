@@ -2,9 +2,10 @@ from shiny import App, ui, render, reactive
 import requests
 from datetime import datetime
 import httpx
+from pathlib import Path
 
 # set values legalBasis for drop-down menu UI
-mapping = {"": "",
+mapping = {"-": " ",
     "Pillar 1 - European Research Council (ERC)": "HORIZON.1.1 - Pillar 1 - European Research Council (ERC)",
     "Pillar 1 - Marie Sklodowska-Curie Actions (MSCA)": "HORIZON.1.2 - Pillar 1 - Marie Sklodowska-Curie Actions (MSCA)",
     "Pillar 1 - Research infrastructures": "HORIZON.1.3 - Pillar 1 - Research infrastructures",
@@ -25,8 +26,8 @@ mapping = {"": "",
 
 # set values for countryCoor for drop-down menu UI - 2 sections (EU memberstates, Associated countries)
 countries_dropdownmenu = {
-    "": "",
-    "European Union Member States": {
+    " ": " ",
+    "European Union Member States":{
         "AT": "Austria",
         "BE": "Belgium",
         "BG": "Bulgaria",
@@ -77,17 +78,25 @@ countries_dropdownmenu = {
     }
 }
 
-# for picture
-here = Path(__file__).parent
+# defining custom input validation functions
+def input_field_filled(value):
+    if value is None or value == "":
+        return "Please ensure to fill all required details on the project, in order to generate a prediction."
+    return None
+
+def input_field_not_integer(value):
+    if value != int(value)
+        return "Number or Organizations participating to the project and Duration in days cannot be set as decimal numbers."
+    return None
+
+def input_field_not_zero(value):
+    if value == 0:
+        return "Total Cost, Maximum EU Contribution, Duration of the project in days and Number of Organizations paticipating to the project cannot be negative or 0."
+    return None
 
 # UI definition 
-app_ui = ui.page_fluid(
-
-    # header picture
-    ui.div(
-        ui.img(src= here / "horizon_banner.png", width="500px", height="100px"),
-        style="margin-bottom: 20px;"
-    ),
+app_ui = ui.page_fillable( 
+    ui.include_css(Path(__file__).parent / "styles.css"),                     
 
     #title center
     ui.div(
@@ -95,73 +104,138 @@ app_ui = ui.page_fluid(
         style="margin-bottom: 30px;"
     ),
 
-   # two-Column Layout
-    ui.layout_columns(
-
-        # Left column: Paragraph/text content
-        ui.column(6,
-            ui.div(
-                ui.input_text_area(cols=50, rows=8, id="descrption", label="Description",
-                                   placeholder="This application predicts the startup delay of projects funded by the Europe" \
-                                   " Horizon 2021-2027 programme. The prediction is based on various project parameters such as total cost," \
-                                   " maximum EU contribution, number of participating organizations, duration, and the legal basis of the project. " \
-                                   "Please fill in the details on the right to get a prediction."
-                                      "The prediction is based on a machine learning model trained on historical project data. " \
-                                   "The model considers factors such as the total cost of the project, the maximum EU contribution, " \
-                                    ),
-                style="padding-right: 20px;"
-            ),
-
-        # middle part
-            ui.div(
-                ui.h5("Prediction Output Startdelay"),
-                ui.output_text_verbatim("prediction_output", placeholder=True),
-                style="margin-top: 10px;"
-            )
-        ),
-
-        # right column - data input fields, title, submit button
-        ui.column(6,
-            ui.div(
-                ui.h4("Please Enter Following Details of the Project:", style="text-align: center; font-weight: bold;"),
+    # tab prediction start-up delay 
+    ui.navset_tab(  
+        ui.nav_panel("Prediction Start-up Delay",
+                    ui.h4("Please Enter Following Project Details:", style="text-align: center; font-weight: bold;"),
                     ui.layout_columns(
-                        ui.input_select("legalBasis", "Europe Horizon 2021-2027 Pillar", choices=mapping),
-                        ui.input_select("countryCoor", "Country of Project's Coordinating Organization", choices=countries_dropdownmenu),
-                        ui.input_numeric("totalCost", "Foreseen Total Cost of Project", value=None, min=0),
-                        ui.input_numeric("duration", "Foreseen Duration of Project (in days)", value=None, min=0),
-                        ui.input_numeric("ecMaxContribution", "Foreseen Maximum EU Contribution for Project:", value=None, min=0),
-                        ui.input_numeric("numberOrg", "Number of Participating Organizations in the Project:", value=None, min=0),
-                        col_widths=[6, 6]  # Split form into 2 equal halves
+                        ui.card(
+                            ui.card_header("Under which Horizon Europe Pillar falls the Project?"),
+                            ui.input_select("legalBasis", "legalBasis", " ", choices=mapping)
+                        ),  
+                        ui.card(
+                            ui.card_header("Please provide the Country of Project's Coordinating Organization"),
+                            ui.input_select("countryCoor","countryCoor", " ", choices=countries_dropdownmenu)
+                        ), 
+                        ui.card(
+                            ui.card_header("Provide the Number of Participating Organizations to the Project (incl. Associated Partners)"),
+                            ui.input_numeric("numberOrg", "numberOrg"," ",value=None, min=1, step=1),
+                        ),
                     ),
-                    ui.input_action_button("submit", "Submit"),
-                    style="display: flex; flex-direction: column; gap: 15px;"
-                )   
-            )
+                    
+                    ui.layout_columns(
+                        ui.card(
+                            ui.card_header("Please provide foreseen Total Cost of the Project"),
+                            ui.input_numeric("totalCost", " ", value=None, min=0.000001, step=1),
+                        ),
+                        ui.card(
+                            ui.card_header("Please provide foreseen Maximum EU Contribution to the Project"),
+                            ui.input_numeric("ecMaxContribution", " ", value=None, min=0.000001, step=1)
+                        ),
+                        ui.card(
+                            ui.card_header("Please provide foreseen Duration of the Project (in days)"),
+                            ui.input_numeric("duration", " ", value=None, min=0, step=1),
+                        ) 
+                    ),
+                    
+                    ui.layout_columns(" ",
+                                      ui.input_action_button("submit", "Submit Project Details to Generate Prediction", class_="btn btn-success"),
+                                      " "
+                    ),
+
+                    ui.layout_column_wrap(
+                        ui.output_text_verbatim("prediction_output", 
+                                                style="text-align: center; margin-top:20px; color:darkgreen"
+                                                )
+                    ),
+                    ui.layout_column_wrap(
+                        ui.output_text_verbatim("input_validation_feedback1", 
+                                                "Please ensure to have filled all details correctly in order to generate a prediction.",
+                                                style="text-align: center; margin-top:10px; color:red"
+                                                ),
+                        ui.output_text_verbatim("input_validation_feedback2", 
+                                                "No cooperation can be set up because of commiting extreme war crimes.",
+                                                style="text-align: center; margin-top:10px; color:red"
+                                                ),
+                        ui.output_text_verbatim("input_validation_feedback3",
+                                                "Please ensure to have filled all details correctly in order to generate a prediction. Total Cost and the Maximim EU contribution for the project cannot be 0.",
+                                                style="text-align: center; margin-top:10px; color:red"
+                                                ),
+                        ui.output_text_verbatim("input_validation_feedback4",
+                                                "Please ensure to have filled all details correctly in order to generate a prediction. Duration of the project (in days) of and numbers of organizations participating cannot be 0.",
+                                                style="text-align: center; margin-top:10px; color:red"
+                                                ),
+                    )
+        ),
+        
+        # tab Information 
+        ui.nav_panel("How the Prediction",
+                    ui.h4("How the Prediction is Made:", style="text-align: center; font-weight: bold;"),
+                    ui.div(
+                        ui.p("This application predicts the startup delay of projects funded by the Europe Horizon 2021-2027 programme. The prediction is based on various project parameters such as total cost, maximum EU contribution, number of participating organizations, duration, and the legal basis of the project."),
+                        ui.p("The prediction is based on a machine learning model trained on historical project data. The model considers factors such as the total cost of the project, the maximum EU contribution, and the number of participating organizations."),
+                        style="text-align: center; margin-top: 20px;"
+                    )
+                ),
         )
+
 )
 
 # defining steps for the server
 def server(input, output, session):
+    
+    # validation of user input 
+    iv = InputValidator()      
+
+    iv.add_rule("countr_coor", check.custom(input_field_filled))
+    iv.add_rule("pillar", check.custom(input_field_filled))
+    iv.add_rule("number_org", check.custom(input_field_filled))
+    iv.add_rule("ec_max_contribution", check.custom(input_field_filled))
+    iv.add_rule("total_cost", check.custom(input_field_filled))
+    iv.add_rule("duration", check.custom(input_field_filled))
+
+    iv.add_rule("duration", check.custom(input_field_not_integer))
+    iv.add_rule("number_org", check.custom(input_field_not_integer))
+
+    iv.add_rule("duration", check.custom(input_field_not_zero))
+    iv.add_rule("number_org", check.custom(input_field_not_zero))
+    iv.add_rule("total_cost", check.custom(input_field_not_zero))
+    iv.add_rule("ec_max_contribution", check.custom(input_field_not_zero))
+
+    iv.enable()
+
+    # storing prediction result in a reactive value to avoid re-computation
+    prediction_result = reactive.Value("")
 
     # processing input after user clicks "submit"
-    @reactive.event(input.submit)
+    @reactive.event(input.submit):
     def get_prediction():
-
-        try:
-            # Validate and extract inputs
+        try: 
+            # user input saved as variables
             total_cost = input.totalCost()
             ec_max_contribution = input.ecMaxContribution()
             pillar = input.legalBasis()
             country_coor = input.countryCoor()
             duration = input.duration()
-
-            # Validate numberOrg
             number_org = input.numberOrg()
-            if number_org is None or number_org < 1:
-                return "Please provide the number of participating organizations for your project, as reflected in your project proposal."
-    
-            # all input and calculated data in dictionary for api gateway
-            payload = {
+            
+            # data validation 
+            if total_cost is None or ec_max_contribution is None:
+                return "input_validation_feedback3"
+            if pillar is None or country_coor is None:
+                return "input_validation_feedback1"
+                
+            if country_coor in ["IL", "Israel"]:
+                return "input_validation_feedback2"
+                
+            if duration is None or duration != int(duration):
+                return "input_validation_feedback4"
+            
+            if number_org is None or number_org != int(number_org):
+                    return "input_validation_feedback4"
+
+            # validated input data in dictionary for api gateway
+            data_to_api = {
                 "totalCost": total_cost,
                 "ecMaxContribution": ec_max_contribution,
                 "numberOrg": number_org,
@@ -169,39 +243,44 @@ def server(input, output, session):
                 "pillar": pillar,
                 "countryCoor": country_coor,
             }
+            
+            # print to help debugging -payload formed?
+            print("Payload being sent to API:", data_to_api)  
 
-            print("Payload being sent to API:", payload)  # Debug print
-
-            # sending to API Gateway - via httpx
+            # POST to API Gateway - via httpx
             api_url = "https://8icrl41qp8.execute-api.eu-west-3.amazonaws.com/prod/predict"
-            response = httpx.post(api_url, json=payload, timeout=40.0)
+            post_request = httpx.post(api_url, json=data_to_api, timeout=45.0)
 
-            # Check for HTTP errors and raise exception if any
-            response.raise_for_status()
+            # check for HTTP errors and raise exception if any and print
+            post_request.raise_for_status()
+            result = post_request.json()
+            print("API response JSON:", result) 
 
-            result = response.json()
-            print("API response JSON:", result)  # Debug print
-
-            # receiving prediction - json
+            # receiving prediction - json format
             prediction = result.get("prediction")
             if prediction is None:
-                return f"API returned no prediction. Full response: {result}"
+                return prediction_result.set(f"No prediction was returned. Response: {result}")
 
-            return f"Predicted startup delay (days): {prediction}"
+            else:
+                prediction_result.set(f"{prediction}")
     
-        except httpx.HTTPStatusError as http_err:
-            # Handle HTTP errors separately to show status code and message
-            return f"HTTP error occurred: {http_err.response.status_code} - {http_err.response.text}"
+        except httpx.HTTPStatusError as status_error:
+            # handle HTTP errors separately to show status code and message
+            return prediction_result.set(f"HTTP error occurred: {status_error.response.status_code} - {status_error.response.text}")
+
+        except httpx.RequestError as request_error:
+            # handle request errors (e.g., connection issues)
+            return prediction_result.set(f"Request error occurred: {str(request_error)}")
 
         except Exception as e:
-            # General catch-all for other exceptions
-            return f"Unexpected error: {str(e)}"
-
+            # general catch-all for other exceptions
+            return prediction_result.set(f"Unexpected error: {str(e)}")
+        
     # calling get_predition function to display prediction on UI
     @output
     @render.text
     def prediction_output():
-        result = get_prediction()
+        result = prediction_result()
 
         # If the result is an error message, show it directly
         if isinstance(result, str) and not result.startswith("Predicted"):
@@ -209,7 +288,7 @@ def server(input, output, session):
 
         # Compose a summary with input values + prediction
         return f"""
-    Prediction Summary:
+    Prediction Based
     -------------------
     Europe Horizon Pillar: {input.legalBasis()}
     Country Coordinator:   {input.countryCoor()}
@@ -217,6 +296,8 @@ def server(input, output, session):
     EU Max Contribution:   {input.ecMaxContribution()}
     Duration (days):       {input.duration()}
     Number of Orgs:        {input.numberOrg()}
+
+    Predicted Startup Delay (in days): 
 
     {result}
     """
