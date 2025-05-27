@@ -1,5 +1,5 @@
 from kedro.pipeline import Pipeline, node, pipeline
-from .nodes import preprocess, impute_missing, split_data
+from .nodes import preprocess, impute_missing, split_data, remove_outliers_isolation_forest
 
 def create_pipeline(**kwargs) -> Pipeline:
     return pipeline([
@@ -26,4 +26,11 @@ def create_pipeline(**kwargs) -> Pipeline:
             ],
             name="split_data_node",
         ),
+        node(
+            func=remove_outliers_isolation_forest,
+            inputs=["X_train_raw", "y_train"],
+            outputs=["X_train_no_outliers", "y_train_no_outliers"],
+            name="remove_outliers_isolation_forest_node",
+        ),
+
     ])

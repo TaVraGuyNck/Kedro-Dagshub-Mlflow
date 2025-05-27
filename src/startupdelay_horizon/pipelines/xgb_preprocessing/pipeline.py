@@ -5,7 +5,7 @@ def create_pipeline(**kwargs) -> Pipeline:
     return pipeline([
         node(
             func=apply_xgb_transformer,
-            inputs=["X_train_raw", "X_test_raw"],
+            inputs=["X_train_no_outliers", "X_test_raw"],
             outputs=[
                 "xgb_X_train_transformed",
                 "xgb_X_test_transformed",

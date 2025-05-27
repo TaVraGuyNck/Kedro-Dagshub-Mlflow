@@ -1,3 +1,9 @@
+import mlflow
+
+# End any active MLflow run, to avoid param conflicts!
+if mlflow.active_run() is not None:
+    mlflow.end_run()
+
 import dagshub
 dagshub.init(repo_owner='tavraguynck',
              repo_name='Kedro-Dagshub-Mlflow',

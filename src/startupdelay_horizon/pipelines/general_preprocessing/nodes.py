@@ -1,19 +1,22 @@
 import pandas as pd
 import numpy as np
+from sklearn.ensemble import IsolationForest
+from sklearn.model_selection import train_test_split
+import pandas as pd
 
 def preprocess(project_df, programme_df, org_df) -> pd.DataFrame:
-    # --- Ensure all inputs are DataFrames ---
+    #Creating panda dataframes
     project_df = pd.DataFrame(project_df)
     programme_df = pd.DataFrame(programme_df)
     org_df = pd.DataFrame(org_df)
 
-    # --- Ensure expected numeric fields are properly typed ---
+    #
     numeric_cols = ["ecMaxContribution", "totalCost"]
     for col in numeric_cols:
         if col in project_df.columns:
             project_df[col] = pd.to_numeric(project_df[col], errors="coerce")
         else:
-            project_df[col] = np.nan  # Create it to avoid downstream key errors
+            project_df[col] = np.nan 
 
     # --- Parse dates safely ---
     for date_col in ["startDate", "endDate", "ecSignatureDate"]:
@@ -85,7 +88,6 @@ def preprocess(project_df, programme_df, org_df) -> pd.DataFrame:
 
     return selected
 
-
 def impute_missing(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
@@ -110,9 +112,6 @@ def impute_missing(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-from sklearn.model_selection import train_test_split
-import pandas as pd
-
 def split_data(df: pd.DataFrame):
     X = df.drop(columns=["startupDelay", "id"])
     y = df["startupDelay"]
@@ -127,3 +126,14 @@ def split_data(df: pd.DataFrame):
         y_train.to_frame(name="startupDelay"),
         y_test.to_frame(name="startupDelay"),
     )
+
+def remove_outliers_isolation_forest(X: pd.DataFrame, y: pd.DataFrame, contamination: float = 0.05):
+
+    features = X.select_dtypes(include="number")
+    iso = IsolationForest(contamination=contamination, random_state=42)
+    preds = iso.fit_predict(features)
+
+    mask = preds == 1  # 1: inlier, -1: outlier
+
+
+    return X[mask].reset_index(drop=True), y[mask].reset_index(drop=True)

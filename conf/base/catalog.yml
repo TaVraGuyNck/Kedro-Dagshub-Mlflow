@@ -1,4 +1,4 @@
-#raw data
+# Raw data (JSON)
 project_raw:
   type: kedro_datasets.json.JSONDataset
   filepath: data/01_raw/project.json
@@ -11,12 +11,12 @@ programme_raw:
   type: kedro_datasets.json.JSONDataset
   filepath: data/01_raw/programme.json
 
-# general preprocessed data
+# General preprocessed data
 model_input_table:
   type: kedro_datasets.pandas.ParquetDataset
   filepath: data/03_primary/selected_features.parquet
 
-# train test split
+# Train/test split
 X_train_raw:
   type: kedro_datasets.pandas.ParquetDataset
   filepath: data/05_model_input/X_train_raw.parquet
@@ -33,7 +33,7 @@ y_test:
   type: kedro_datasets.pandas.ParquetDataset
   filepath: data/05_model_input/y_test.parquet
 
-#Catboost transformation for test and train
+# CatBoost transformations
 cb_X_train_transformed:
   type: kedro_datasets.pandas.ParquetDataset
   filepath: data/05_model_input/cb_X_train_transformed.parquet
@@ -50,7 +50,7 @@ cb_preprocessor:
   type: pickle.PickleDataset
   filepath: data/06_models/cb_preprocessor.pkl
 
-#Xgboost transformation for test and train
+# XGBoost transformations
 xgb_X_train_transformed:
   type: kedro_datasets.pandas.ParquetDataset
   filepath: data/05_model_input/xgb_X_train_transformed.parquet
@@ -63,15 +63,20 @@ xgb_preprocessor:
   type: pickle.PickleDataset
   filepath: data/06_models/xgb_preprocessor.pkl
 
-# evaluation metrics
+# Evaluation metrics 
 cb_eval_metrics:
-  type: kedro_datasets.json.JSONDataset
-  filepath: data/08_reporting/cb_eval_metrics.json
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/08_reporting/cb_eval_metrics.parquet
 
 xgb_eval_metrics:
-  type: kedro_datasets.json.JSONDataset
-  filepath: data/08_reporting/xgb_eval_metrics.json
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/08_reporting/xgb_eval_metrics.parquet
 
+lr_eval_metrics:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/08_reporting/lr_eval_metrics.parquet
+
+# Trained models (pickle)
 cb_model:
   type: pickle.PickleDataset
   filepath: data/06_models/cb_best_model.pkl
@@ -80,7 +85,19 @@ xgb_model:
   type: pickle.PickleDataset
   filepath: data/06_models/xgb_best_model.pkl
 
-# Shap plots
+lr_best_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/lr_best_model.pkl
+
+lr_best_pca_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/lr_best_pca.pkl
+
+lr_preprocessor:
+  type: pickle.PickleDataset
+  filepath: data/06_models/lr_preprocessor.pkl
+
+# SHAP plots 
 shap_beeswarm_cb_plot:
   type: kedro_datasets.matplotlib.MatplotlibWriter
   filepath: data/08_reporting/shap_cb_summary.png
@@ -89,7 +106,7 @@ shap_beeswarm_xgb_plot:
   type: kedro_datasets.matplotlib.MatplotlibWriter
   filepath: data/08_reporting/shap_xgb_summary.png
 
-# Grid search
+# Grid search results 
 cb_grid_search_results:
   type: kedro_datasets.pandas.ParquetDataset
   filepath: data/08_reporting/cb_grid_results.parquet
@@ -97,3 +114,33 @@ cb_grid_search_results:
 xgb_grid_search_results:
   type: kedro_datasets.pandas.ParquetDataset
   filepath: data/08_reporting/xgb_grid_results.parquet
+
+lr_grid_results:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/08_reporting/lr_grid_results.parquet
+
+# Linear regression transformation for train and test
+lr_X_train_transformed:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/05_model_input/lr_X_train_transformed.parquet
+
+lr_X_test_transformed:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/05_model_input/lr_X_test_transformed.parquet
+
+X_train_no_outliers:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/05_model_input/X_train_no_outliers.parquet
+
+y_train_no_outliers:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/05_model_input/y_train_no_outliers.parquet
+
+# Linear regression coefficients and PCA plot
+lr_coefficients:
+  type: kedro_datasets.pandas.ParquetDataset
+  filepath: data/08_reporting/lr_coefficients.parquet
+
+pca_2d_plot:
+  type: kedro_datasets.matplotlib.MatplotlibWriter
+  filepath: data/08_reporting/pca_2d_plot.png

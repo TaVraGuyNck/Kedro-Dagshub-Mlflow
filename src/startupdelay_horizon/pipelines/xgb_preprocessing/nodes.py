@@ -1,5 +1,3 @@
-import os
-import joblib
 import mlflow
 import pandas as pd
 
@@ -33,21 +31,21 @@ class XGBoostPreprocessor:
     def transform(self, X):
         X = X.copy()
 
-        # Fill missing values
+        #Fill missing values
         X["pillar"] = X["pillar"].fillna("missing")
         X["countryCoor"] = X["countryCoor"].fillna("missing")
         X["fundingScheme"] = X["fundingScheme"].fillna("missing")
 
-        # Encode pillar as category codes
+        #Encode pillar as category codes
         X["pillar_encoded"] = X["pillar"].astype("category").cat.codes
 
-        # Handle country
+        #Handle country
         X["country_clean"] = X["countryCoor"].where(
             X["countryCoor"].isin(self.top_countries_), "Other"
         )
         country_dummies = pd.get_dummies(X["country_clean"], prefix="country")
 
-        # Handle funding scheme
+        #Handle funding scheme
         X["funding_clean"] = X["fundingScheme"].where(
             X["fundingScheme"].isin(self.top_funding_), "Other"
         )

@@ -5,7 +5,7 @@ def create_pipeline() -> Pipeline:
     return pipeline([
         node(
             func=apply_cb_transformer,
-            inputs=["X_train_raw", "X_test_raw"],
+            inputs=["X_train_no_outliers", "X_test_raw"],
             outputs=[
                 "cb_X_train_transformed",
                 "cb_X_test_transformed",
