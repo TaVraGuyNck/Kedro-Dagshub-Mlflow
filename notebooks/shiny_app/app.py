@@ -1,5 +1,4 @@
 from shiny import App, ui, render, reactive
-import requests
 from datetime import datetime
 import httpx
 from pathlib import Path
@@ -78,29 +77,13 @@ countries_dropdownmenu = {
     }
 }
 
-# defining custom input validation functions
-def input_field_filled(value):
-    if value is None or value == "":
-        return "Please ensure to fill all required details on the project, in order to generate a prediction."
-    return None
-
-def input_field_not_integer(value):
-    if value != int(value)
-        return "Number or Organizations participating to the project and Duration in days cannot be set as decimal numbers."
-    return None
-
-def input_field_not_zero(value):
-    if value == 0:
-        return "Total Cost, Maximum EU Contribution, Duration of the project in days and Number of Organizations paticipating to the project cannot be negative or 0."
-    return None
-
 # UI definition 
 app_ui = ui.page_fillable( 
     ui.include_css(Path(__file__).parent / "styles.css"),                     
 
     #title center
     ui.div(
-        ui.h2("Prediction of Startup Delay - Projects Europe Horizon 2021-2027", style="text-align:center; font-weight: bold;"),
+        ui.h2("Real-time Prediction of Startup Delay - Projects Europe Horizon 2021-2027", style="text-align:center; font-weight: bold;"),
         style="margin-bottom: 30px;"
     ),
 
@@ -111,18 +94,17 @@ app_ui = ui.page_fillable(
                     ui.layout_columns(
                         ui.card(
                             ui.card_header("Under which Horizon Europe Pillar falls the Project?"),
-                            ui.input_select("legalBasis", "legalBasis", " ", choices=mapping)
+                            ui.input_select("legalBasis", " ", choices=mapping)
                         ),  
                         ui.card(
                             ui.card_header("Please provide the Country of Project's Coordinating Organization"),
-                            ui.input_select("countryCoor","countryCoor", " ", choices=countries_dropdownmenu)
+                            ui.input_select("countryCoor", " ", choices=countries_dropdownmenu)
                         ), 
                         ui.card(
                             ui.card_header("Provide the Number of Participating Organizations to the Project (incl. Associated Partners)"),
-                            ui.input_numeric("numberOrg", "numberOrg"," ",value=None, min=1, step=1),
+                            ui.input_numeric("numberOrg"," ",value=None, min=1, step=1),
                         ),
                     ),
-                    
                     ui.layout_columns(
                         ui.card(
                             ui.card_header("Please provide foreseen Total Cost of the Project"),
@@ -137,39 +119,19 @@ app_ui = ui.page_fillable(
                             ui.input_numeric("duration", " ", value=None, min=0, step=1),
                         ) 
                     ),
-                    
                     ui.layout_columns(" ",
                                       ui.input_action_button("submit", "Submit Project Details to Generate Prediction", class_="btn btn-success"),
                                       " "
                     ),
 
-                    ui.layout_column_wrap(
-                        ui.output_text_verbatim("prediction_output", 
-                                                style="text-align: center; margin-top:20px; color:darkgreen"
-                                                )
-                    ),
-                    ui.layout_column_wrap(
-                        ui.output_text_verbatim("input_validation_feedback1", 
-                                                "Please ensure to have filled all details correctly in order to generate a prediction.",
-                                                style="text-align: center; margin-top:10px; color:red"
-                                                ),
-                        ui.output_text_verbatim("input_validation_feedback2", 
-                                                "No cooperation can be set up because of commiting extreme war crimes.",
-                                                style="text-align: center; margin-top:10px; color:red"
-                                                ),
-                        ui.output_text_verbatim("input_validation_feedback3",
-                                                "Please ensure to have filled all details correctly in order to generate a prediction. Total Cost and the Maximim EU contribution for the project cannot be 0.",
-                                                style="text-align: center; margin-top:10px; color:red"
-                                                ),
-                        ui.output_text_verbatim("input_validation_feedback4",
-                                                "Please ensure to have filled all details correctly in order to generate a prediction. Duration of the project (in days) of and numbers of organizations participating cannot be 0.",
-                                                style="text-align: center; margin-top:10px; color:red"
-                                                ),
-                    )
+                    ui.layout_columns(" ",
+                                      ui.output_text_verbatim("prediction_output"),
+                                      " "
+                    )                  
         ),
-        
+
         # tab Information 
-        ui.nav_panel("How the Prediction",
+        ui.nav_panel("Information",
                     ui.h4("How the Prediction is Made:", style="text-align: center; font-weight: bold;"),
                     ui.div(
                         ui.p("This application predicts the startup delay of projects funded by the Europe Horizon 2021-2027 programme. The prediction is based on various project parameters such as total cost, maximum EU contribution, number of participating organizations, duration, and the legal basis of the project."),
@@ -178,37 +140,15 @@ app_ui = ui.page_fillable(
                     )
                 ),
         )
-
 )
-
 # defining steps for the server
 def server(input, output, session):
-    
-    # validation of user input 
-    iv = InputValidator()      
-
-    iv.add_rule("countr_coor", check.custom(input_field_filled))
-    iv.add_rule("pillar", check.custom(input_field_filled))
-    iv.add_rule("number_org", check.custom(input_field_filled))
-    iv.add_rule("ec_max_contribution", check.custom(input_field_filled))
-    iv.add_rule("total_cost", check.custom(input_field_filled))
-    iv.add_rule("duration", check.custom(input_field_filled))
-
-    iv.add_rule("duration", check.custom(input_field_not_integer))
-    iv.add_rule("number_org", check.custom(input_field_not_integer))
-
-    iv.add_rule("duration", check.custom(input_field_not_zero))
-    iv.add_rule("number_org", check.custom(input_field_not_zero))
-    iv.add_rule("total_cost", check.custom(input_field_not_zero))
-    iv.add_rule("ec_max_contribution", check.custom(input_field_not_zero))
-
-    iv.enable()
 
     # storing prediction result in a reactive value to avoid re-computation
     prediction_result = reactive.Value("")
 
     # processing input after user clicks "submit"
-    @reactive.event(input.submit):
+    @reactive.event(input.submit)
     def get_prediction():
         try: 
             # user input saved as variables
@@ -218,21 +158,6 @@ def server(input, output, session):
             country_coor = input.countryCoor()
             duration = input.duration()
             number_org = input.numberOrg()
-            
-            # data validation 
-            if total_cost is None or ec_max_contribution is None:
-                return "input_validation_feedback3"
-            if pillar is None or country_coor is None:
-                return "input_validation_feedback1"
-                
-            if country_coor in ["IL", "Israel"]:
-                return "input_validation_feedback2"
-                
-            if duration is None or duration != int(duration):
-                return "input_validation_feedback4"
-            
-            if number_org is None or number_org != int(number_org):
-                    return "input_validation_feedback4"
 
             # validated input data in dictionary for api gateway
             data_to_api = {
@@ -276,20 +201,18 @@ def server(input, output, session):
             # general catch-all for other exceptions
             return prediction_result.set(f"Unexpected error: {str(e)}")
         
+
+        
     # calling get_predition function to display prediction on UI
     @output
     @render.text
     def prediction_output():
         result = prediction_result()
 
-        # If the result is an error message, show it directly
-        if isinstance(result, str) and not result.startswith("Predicted"):
-            return result
-
-        # Compose a summary with input values + prediction
         return f"""
-    Prediction Based
-    -------------------
+    Prediction Based On Datails Provided on Project:
+    -----------------------------------------------
+   
     Europe Horizon Pillar: {input.legalBasis()}
     Country Coordinator:   {input.countryCoor()}
     Total Cost:            {input.totalCost()}

@@ -23,7 +23,7 @@ mapping = {
 app_ui = ui.page_fluid(
     ui.panel_title("Prediction of Startup Delay - Projects Europe Horizon 2021-2027"),
     ui.input_select("legalBasis", "Select Europe Horizon Pillar for your project", {k: k for k in mapping.keys()}),
-    ui.input_select("countryCoor", "Select Country of Coordinating Organization of Your Project")
+    ui.input_select("countryCoor", "Select Country of Coordinating Organization of Your Project"),
     ui.input_action_button("submit", "Submit"),
     ui.output_text_verbatim("prediction_output")
 )

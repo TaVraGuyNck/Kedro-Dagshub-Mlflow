@@ -1,0 +1,15 @@
+body {
+  background-color: #dceaf5;
+
+  > .container {
+    max-width: 475px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-top: 3rem;
+    padding-bottom: 5rem;
+  }
+}
+
+.card-body .shiny-input-container {
+  width: 100% !important;
+}
