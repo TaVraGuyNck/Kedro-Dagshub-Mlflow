@@ -3,13 +3,51 @@ from datetime import datetime
 import httpx
 from pathlib import Path
 
-# GLOBAL SCOPE — runs immediately when app.py is loaded
-api_uri = "https://8icrl41qp8.execute-api.eu-west-3.amazonaws.com/prod/predict"
+# values fundingScheme for drop-down menu UI: 
+fundingScheme_dropdown = {
+  " ":" ",
+    "HORIZON-EIC":"HORIZON-EIC",
+    "HORIZON-RIA":"HORIZON-RIA",
+    "HORIZON-EIC-ACC-BF":"HORIZON-EIC-ACC-BF",
+    "HORIZON-CSA":"HORIZON-CSA",
+    "HORIZON-IA":"HORIZON-IA",
+    "HORIZON-JU-CSA":"HORIZON-JU-CSA",
+    "HORIZON-COFUND":"HORIZON-COFUND",
+    "HORIZON-EIC-ACC":"HORIZON-EIC-ACC",
+    "HORIZON-TMA-MSCA-PF-EF":"HORIZON-TMA-MSCA-PF-EF",
+    "HORIZON-JU-RIA":"HORIZON-JU-RIA",
+    "HORIZON-JU-IA":"HORIZON-JU-IA",
+    "EURATOM-RIA":"EURATOM-RIA",
+    "HORIZON-TMA-MSCA-PF-GF":"HORIZON-TMA-MSCA-PF-GF",
+    "HORIZON-TMA-MSCA-DN":"HORIZON-TMA-MSCA-DN",
+    "HORIZON-TMA-MSCA-SE":"HORIZON-TMA-MSCA-SE",
+    "HORIZON-TMA-MSCA-Cofund-P":"HORIZON-TMA-MSCA-Cofund-P",
+    "MSCA-PF":"MSCA-PF",
+    "HORIZON-TMA-MSCA-Cofund-D":"HORIZON-TMA-MSCA-Cofund-D",
+    "HORIZON-TMA-MSCA-DN-JD":"HORIZON-TMA-MSCA-DN-JD",
+    "HORIZON-TMA-MSCA-DN-ID":"HORIZON-TMA-MSCA-DN-ID",
+    "EURATOM-IA":"EURATOM-IA",
+    "EURATOM-CSA":"EURATOM-CSA",
+    "RIA":"RIA",
+    "HORIZON-AG":"HORIZON-AG",
+    "CSA":"CSA",
+    "HORIZON-AG-UN":"HORIZON-AG-UN",
+    "HORIZON-ERC-POC":"HORIZON-ERC-POC",
+    "HORIZON-ERC":"HORIZON-ERC",
+    "EIC":"EIC",
+    "HORIZON-EIT-KIC":"HORIZON-EIT-KIC",
+    "HORIZON-PCP":"HORIZON-PCP",
+    "HORIZON-ERC-SYG":"HORIZON-ERC-SYG",
+    "EURATOM-COFUND":"EURATOM-COFUND",
+    "ERC":"ERC",
+    "HORIZON-AG-LS":"HORIZON-AG-LS",
+    "ERC-POC":"ERC-POC"
+}
 
 
-# values pillar for drop-down menu UI
-mapping = {
-    "-": " ",
+
+# values legalBasis for drop-down menu UI
+mapping = {"-": " ",
     "Pillar 1 - European Research Council (ERC)": "HORIZON.1.1 - Pillar 1 - European Research Council (ERC)",
     "Pillar 1 - Marie Sklodowska-Curie Actions (MSCA)": "HORIZON.1.2 - Pillar 1 - Marie Sklodowska-Curie Actions (MSCA)",
     "Pillar 1 - Research infrastructures": "HORIZON.1.3 - Pillar 1 - Research infrastructures",
@@ -84,85 +122,75 @@ countries_dropdownmenu = {
 
 # UI definition 
 app_ui = ui.page_fillable( 
-    ui.include_css(Path(__file__).parent / "style.css"),
+    ui.include_css(Path(__file__).parent / "styles.css"),                     
 
+    #title center
     ui.div(
         ui.h2("Real-time Prediction of Startup Delay - Projects Europe Horizon 2021-2027", style="text-align:center; font-weight: bold;"),
         style="margin-bottom: 30px;"
     ),
 
-    ui.navset_tab(
-        ui.nav_panel(
-            "Prediction Start-up Delay",
-            ui.h4("Please Enter Following Project Details:", style="text-align: center; font-weight: bold;"),
+    # tab prediction start-up delay 
+    ui.navset_tab(  
+        ui.nav_panel("Prediction Start-up Delay",
+                    ui.h4("Please Enter Following Project Details:", style="text-align: center; font-weight: bold;"),
+                    ui.layout_columns(
+                        ui.card(
+                            ui.card_header("Under which Horizon Europe Pillar falls the Project?"),
+                            ui.input_select("legalBasis", " ", choices=mapping)
+                        ),  
+                        ui.card(
+                            ui.card_header("Please provide the Country of Project's Coordinating Organization"),
+                            ui.input_select("countryCoor", " ", choices=countries_dropdownmenu)
+                        ), 
+                        ui.card(
+                            ui.card_header("Provide the Number of Participating Organizations to the Project (incl. Associated Partners)"),
+                            ui.input_numeric("numberOrg"," ",value=None, min=1, step=1),
+                        ),
+                    ),
+                    ui.layout_columns(
+                        ui.card(
+                            ui.card_header("Please provide foreseen Total Cost of the Project"),
+                            ui.input_numeric("totalCost", " ", value=None, min=0.000001, step=1),
+                        ),
+                        ui.card(
+                            ui.card_header("Please provide foreseen Maximum EU Contribution to the Project"),
+                            ui.input_numeric("ecMaxContribution", " ", value=None, min=0.000001, step=1)
+                        ),
+                        ui.card(
+                            ui.card_header("Please provide foreseen Duration of the Project (in days)"),
+                            ui.input_numeric("duration", " ", value=None, min=0, step=1),
+                        ) 
+                    ),
 
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("Under which Horizon Europe Pillar falls the Project?"),
-                    ui.input_select("pillar", " ", choices=mapping)
-                ),  
-                ui.card(
-                    ui.card_header("Please provide the Country of Project's Coordinating Organization"),
-                    ui.input_select("countryCoor", " ", choices=countries_dropdownmenu)
-                ), 
-                ui.card(
-                    ui.card_header("Provide the Number of Participating Organizations to the Project (incl. Associated Partners)"),
-                    ui.input_numeric("numberOrg", " ", value=None, min=1, step=1),
-                ),
-            ),
-
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("Please provide foreseen Total Cost of the Project"),
-                    ui.input_numeric("totalCost", " ", value=None, min=0.000001, step=1),
-                ),
-                ui.card(
-                    ui.card_header("Please provide foreseen Maximum EU Contribution to the Project"),
-                    ui.input_numeric("ecMaxContribution", " ", value=None, min=0.000001, step=1)
-                ),
-                ui.card(
-                    ui.card_header("Please provide foreseen Duration of the Project (in days)"),
-                    ui.input_numeric("duration", " ", value=None, min=0, step=1),
-                )
-            ),
-            ui.layout_columns(" ",
-                ui.input_action_button("submit", "Submit Project Details to Generate Prediction", class_="btn btn-success"),
-                "  "),
-            ui.layout_columns(" "
-            ),
-          
-            ui.layout_columns(" ",
-                              ui.output_ui("validation_msg"),
-                              " "
-            ),
-    
-            ui.tags.div(
-                {"class": "background"},
-                ui.tags.div(
-                    ui.output_ui("prediction_output"),class_="text-block", style="top: 50px; right 60%; width : 70%;text_align:left")
+                    ui.layout_columns(
+                        ui.output_ui("prediction_output"),
+                        ui.div(
+                            ui.card(
+                                ui.card_header("Please select the Funding Scheme of the Project"),
+                                ui.input_select("fundingScheme", "  ", choices=fundingScheme_dropdown)
+                            ),
+                            ui.input_action_button("submit", "Submit Project Details to Generate Prediction", class_="btn btn-success", style = "width:680px"),
+                            style="display: flex; flex-direction: column; gap: 10px;"),
+                        ui.output_ui("validation_msg")
+                    )
         ),
-    ),
-
+                                                     
+    
+        # tab Information 
         ui.nav_panel("Information",
-            ui.h4("How the Prediction is Made:", style="text-align: center; font-weight: bold;"),
-            ui.div(
-                ui.p(
-                    "A good start is half the battle! Prediction of Start-up delay for Projects under the Horizon Europe program. "
-                    "The aim of this project is to predict the start-up delay of Projects under Europe Horizon 2021-2027. "
-                    "“Start-up delay” is the delay between the date of the EC signature, and the actual start date of the project. "
-                    "The project envisions to mainly help program administrators identify projects “in the risk” zone for start-up delay. "
-                    "This identification can help anticipating extra and early support to these projects, such as planning timelines and setting expectations. "
-                    "Reducing a plausible start-up delay for projects to a minimum will contribute to the efficiency of the Horizon program, and will enhance agility "
-                    "to specific project needs. The prediction is generated by a trained Machine Learning (ML) model. This model was obtained after experimenting with "
-                    "various models, preprocessing techniques, different sets of features, and hyperparameters. The model was trained with data from all ongoing (or already ended) "
-                    "Horizon Europe Projects since the start in 2021."
-                ),
-                style="text-align: center; margin-top: 20px;"
-            )
+                    ui.h4("How the Prediction is Made:", style="text-align: center; font-weight: bold;"),
+                    ui.div(
+                        ui.p("A good start is half the battle! Prediction of Start-up delay for Projects under the Horizon Europe program. The aim of this project is to predict the start-up delay of Projects under Europe Horizon 2021-2027. \
+                              “Start-up delay” is the delay between the date of the EC signature, and the actual start date of the project. The project invisions to mainly help program administrators identify projects “in the risk” zone for start-up delay.\
+                              This identification can helpt anticipating extra and early support to these projects, such as planning timelines and setting expectations. Reducing a plausible start-up delay for projects to a minimum, will contribute to the efficiency \
+                              of the Horizon program, and will enhance agility to specific project needs. The prediction is generated by a trained Machine Learning (ML) model. This model was obtained after exprimenting with various models, preprocessing techniques,\
+                              different sets of features, different (hyper)parameters. The model was trained with data from all ongoing (or already ended) Horizon Europe Projects since the start in 2021."),
+                        style="text-align: center; margin-top: 20px;"
+                    )
+                )
         )
-    )
-    )
-
+)
 # defining steps for the server
 def server(input, output, session):
 
@@ -180,10 +208,10 @@ def server(input, output, session):
             return "Maximum EU contribution cannot be greater than total cost of the project."
         if not input.countryCoor():
             return "Please select a country for Coordinating Organization."
-        if not input.pillar():
-            return "Please select the correct pillar to which the project belongs."
-        #if not input.fundingScheme(): 
-            #return "Please selcte the applicable funding scheme for the project."
+        if not input.legalBasis():
+            return "Please select a legal basis for the project."
+        if not input.fundingScheme():
+            return "Please select a funding scheme for the project."
         if input.duration() is None:
             return "Please enter the duration of the project in days."
         if not isinstance(input.duration(), int):
@@ -221,11 +249,10 @@ def server(input, output, session):
             #input saved as variables
             total_cost = input.totalCost()
             ec_max_contribution = input.ecMaxContribution()
-            pillar = input.pillar()
+            pillar = input.legalBasis()
             country_coor = input.countryCoor()
             duration = input.duration()
             number_org = input.numberOrg()
-            #fundingScheme = input.fundingScheme()
 
             # validated input data in dictionary for api gateway
             data_to_api = {
@@ -235,24 +262,24 @@ def server(input, output, session):
                 "duration": duration,
                 "pillar": pillar,
                 "countryCoor": country_coor,
-                #"fundingScheme": fundingScheme
             }
             
             # print to help debugging -payload formed?
             print("Payload being sent to API:", data_to_api)  
 
             # POST to API Gateway - via httpx
-            response = httpx.post(api_uri, json=data_to_api, timeout=45.0)
+            #api_url = "https://8icrl41qp8.execute-api.eu-west-3.amazonaws.com/prod/predict"
+            response = httpx.post(api_url, json=data_to_api, timeout=45.0)
 
             # check for HTTP errors and raise exception if any and print
-            response.raise_for_status()
-            result = response.json()
-          
+            # response.raise_for_status()
+           # result = response.json()
+            presult = {"prediction": 42}
             
             print("API response JSON:", result) 
 
             # receiving prediction - json format
-            prediction = result.get("prediction", "No prediction")
+            prediction = result.get("prediction", "No predictioon")
             if prediction is None:
                 return "No prediction was returned. Response: {}".format(result)
             else:
@@ -271,7 +298,7 @@ def server(input, output, session):
 
     # calling get_predition function to display prediction on UI
     @output
-    @render.ui
+    @render.text
     def prediction_output():
         if input.submit() == 0:
             return ""
@@ -280,23 +307,21 @@ def server(input, output, session):
         if result is None: 
             return None
 
-        return ui.tags.div(
-            {"style": "white-space: pre-wrap;"},
-        f"""Prediction based on the Project details provided: 
--------------------------------------------------------------------------------------
+        return f"""Prediction Based On Project Details:
+    ------------------------------------
+   
+    Europe Horizon Pillar:        {input.legalBasis()}
+    Country of Coordinating 
+    Organization:                 {input.countryCoor()}
+    Total Cost:                   {input.totalCost()}
+    EC Max Contribution:          {input.ecMaxContribution()}
+    Duration (in days):           {input.duration()}
+    Number of Organziations                              
+    particpating in the project:  {input.numberOrg()}
+    
+    Predicted Startup Delay (in days): 
 
-RESULT: {result}
-__________________________________________________________
+    {result}
+    """
 
-Europe Horizon Pillar--------------------------------------------- {input.pillar()}
-Country of Coordinating Organization:----------------------------- {input.countryCoor()}
-Total Cost:-------------------------------------------------------- {input.totalCost()}
-EC Max Contribution:------------------------------------------------{input.ecMaxContribution()}
-Duration (in days):------------------------------------------------{input.duration()}
-Number of Participating Organizations:-----------------------------{input.numberOrg()}
-
-
-
-""")
-       
 app = App(app_ui, server)

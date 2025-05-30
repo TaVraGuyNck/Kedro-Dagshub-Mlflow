@@ -4,7 +4,50 @@ import httpx
 from pathlib import Path
 
 # GLOBAL SCOPE — runs immediately when app.py is loaded
-api_uri = "https://8icrl41qp8.execute-api.eu-west-3.amazonaws.com/prod/predict"
+#api_uri = "https://8icrl41qp8.execute-api.eu-west-3.amazonaws.com/prod/predict"
+
+
+
+# values fundingScheme for drop-down menu UI: 
+fundingScheme_dropdown = {
+  " ":" ",
+    "HORIZON-EIC":"HORIZON-EIC",
+    "HORIZON-RIA":"HORIZON-RIA",
+    "HORIZON-EIC-ACC-BF":"HORIZON-EIC-ACC-BF",
+    "HORIZON-CSA":"HORIZON-CSA",
+    "HORIZON-IA":"HORIZON-IA",
+    "HORIZON-JU-CSA":"HORIZON-JU-CSA",
+    "HORIZON-COFUND":"HORIZON-COFUND",
+    "HORIZON-EIC-ACC":"HORIZON-EIC-ACC",
+    "HORIZON-TMA-MSCA-PF-EF":"HORIZON-TMA-MSCA-PF-EF",
+    "HORIZON-JU-RIA":"HORIZON-JU-RIA",
+    "HORIZON-JU-IA":"HORIZON-JU-IA",
+    "EURATOM-RIA":"EURATOM-RIA",
+    "HORIZON-TMA-MSCA-PF-GF":"HORIZON-TMA-MSCA-PF-GF",
+    "HORIZON-TMA-MSCA-DN":"HORIZON-TMA-MSCA-DN",
+    "HORIZON-TMA-MSCA-SE":"HORIZON-TMA-MSCA-SE",
+    "HORIZON-TMA-MSCA-Cofund-P":"HORIZON-TMA-MSCA-Cofund-P",
+    "MSCA-PF":"MSCA-PF",
+    "HORIZON-TMA-MSCA-Cofund-D":"HORIZON-TMA-MSCA-Cofund-D",
+    "HORIZON-TMA-MSCA-DN-JD":"HORIZON-TMA-MSCA-DN-JD",
+    "HORIZON-TMA-MSCA-DN-ID":"HORIZON-TMA-MSCA-DN-ID",
+    "EURATOM-IA":"EURATOM-IA",
+    "EURATOM-CSA":"EURATOM-CSA",
+    "RIA":"RIA",
+    "HORIZON-AG":"HORIZON-AG",
+    "CSA":"CSA",
+    "HORIZON-AG-UN":"HORIZON-AG-UN",
+    "HORIZON-ERC-POC":"HORIZON-ERC-POC",
+    "HORIZON-ERC":"HORIZON-ERC",
+    "EIC":"EIC",
+    "HORIZON-EIT-KIC":"HORIZON-EIT-KIC",
+    "HORIZON-PCP":"HORIZON-PCP",
+    "HORIZON-ERC-SYG":"HORIZON-ERC-SYG",
+    "EURATOM-COFUND":"EURATOM-COFUND",
+    "ERC":"ERC",
+    "HORIZON-AG-LS":"HORIZON-AG-LS",
+    "ERC-POC":"ERC-POC"
+}
 
 
 # values pillar for drop-down menu UI
@@ -126,6 +169,14 @@ app_ui = ui.page_fillable(
                 )
             ),
             ui.layout_columns(" ",
+                              ui.card(
+                                  ui.card_header("Funding Scheme of the Project"),
+                                  ui.input_select("fundingScheme", " ", choices=fundingScheme_dropdown)
+                              ),
+                              "  "
+            ),
+
+            ui.layout_columns(" ",
                 ui.input_action_button("submit", "Submit Project Details to Generate Prediction", class_="btn btn-success"),
                 "  "),
             ui.layout_columns(" "
@@ -182,8 +233,8 @@ def server(input, output, session):
             return "Please select a country for Coordinating Organization."
         if not input.pillar():
             return "Please select the correct pillar to which the project belongs."
-        #if not input.fundingScheme(): 
-            #return "Please selcte the applicable funding scheme for the project."
+        if not input.fundingScheme(): 
+            return "Please selcte the applicable funding scheme for the project."
         if input.duration() is None:
             return "Please enter the duration of the project in days."
         if not isinstance(input.duration(), int):
@@ -225,7 +276,7 @@ def server(input, output, session):
             country_coor = input.countryCoor()
             duration = input.duration()
             number_org = input.numberOrg()
-            #fundingScheme = input.fundingScheme()
+            fundingScheme = input.fundingScheme()
 
             # validated input data in dictionary for api gateway
             data_to_api = {
@@ -235,7 +286,7 @@ def server(input, output, session):
                 "duration": duration,
                 "pillar": pillar,
                 "countryCoor": country_coor,
-                #"fundingScheme": fundingScheme
+                "fundingScheme": fundingScheme
             }
             
             # print to help debugging -payload formed?

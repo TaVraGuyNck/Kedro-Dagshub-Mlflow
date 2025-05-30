@@ -12,10 +12,16 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-
 def preprocess_for_xgboost(df: pd.DataFrame) -> pd.DataFrame:
 
+    #loading and applying encoder on pillar
     le_pillar = joblib.load("models/encoders/pillar_encoder.pkl")
+
+    # but first validation check for pillar: 
+    allowed_pillars = set(le_pillar.classes_)
+    if not df["pillar"].isin(allowed_pillars).all():
+        raise ValueError("Invalid pillar value(s) detected in input.")
+
     df["pillar_encoded"] = le_pillar.transform(df["pillar"].astype(str))
 
     top_countries = joblib.load("models/encoders/top_countries.pkl")
@@ -33,24 +39,23 @@ def preprocess_for_xgboost(df: pd.DataFrame) -> pd.DataFrame:
 def lambda_handler(event, context):
     try:
         print("Raw event:", json.dumps(event))
-        
-        # parsing data if needed - or if sees as string = string
+
+        # for lambda to be able to read all kinds of formats delivered by the api
         if "body" in event:
             body = event["body"]
             try:
-                # ensuring acceptation of plain JSON string, dictionary as well as base64-encoded 
-                # - depending on what api gateway sends to lambda
                 if event.get("isBase64Encoded"):
                     body = base64.b64decode(body).decode("utf-8")
                 input_data = json.loads(body) if isinstance(body, str) else body
-
+       
             except Exception as e:
-                return {
+                logger.error(f"Error parsing body: {str(e)}")
+                return {     
                     "statusCode": 400,
+                    "headers": { "Content-Type": "application/json" },
                     "body": json.dumps({"error": f"Invalid JSON body: {str(e)}"})
                 }
-
-        else: 
+        else:
             input_data = event
 
         # check if all fields contain data
@@ -63,6 +68,7 @@ def lambda_handler(event, context):
             if field not in input_data:
                 return {
                     "statusCode": 400,
+                    "headers": { "Content-Type": "application/json" },
                     "body": json.dumps({"error": f"Missing required field: {field}"})
                 }
 
@@ -75,12 +81,14 @@ def lambda_handler(event, context):
         except Exception:
             return {
                 "statusCode": 400,
+                "headers": { "Content-Type": "application/json" },
                 "body": json.dumps({"error": "Numeric inputs must be valid numbers."})
             }
 
         if total_cost < 0 or ec_contrib < 0 or duration < 0 or number_org < 0:
             return {
                 "statusCode": 400,
+                "headers": { "Content-Type": "application/json" },
                 "body": json.dumps({"error": "Numeric inputs must be non-negative."})
             }
 
@@ -144,6 +152,7 @@ def lambda_handler(event, context):
 
         return {
             "statusCode": 200,
+            "headers": { "Content-Type": "application/json" },
             "body": json.dumps(response)
         }
 
@@ -151,5 +160,6 @@ def lambda_handler(event, context):
         logger.error(f"Error: {str(e)}", exc_info=True)
         return {
             "statusCode": 500,
+            "headers": { "Content-Type": "application/json" },
             "body": json.dumps({"error": str(e)})
         }

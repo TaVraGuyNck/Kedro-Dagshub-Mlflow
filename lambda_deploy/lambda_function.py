@@ -33,24 +33,22 @@ def preprocess_for_xgboost(df: pd.DataFrame) -> pd.DataFrame:
 def lambda_handler(event, context):
     try:
         print("Raw event:", json.dumps(event))
-        
-        # parsing data if needed - or if sees as string = string
+
+        # for lambda to be able to read all kinds of formats delivered by the api
         if "body" in event:
             body = event["body"]
             try:
-                # ensuring acceptation of plain JSON string, dictionary as well as base64-encoded 
-                # - depending on what api gateway sends to lambda
                 if event.get("isBase64Encoded"):
                     body = base64.b64decode(body).decode("utf-8")
                 input_data = json.loads(body) if isinstance(body, str) else body
-
+       
             except Exception as e:
-                return {
+                logger.error(f"Error parsing body: {str(e)}")
+                return {     
                     "statusCode": 400,
                     "body": json.dumps({"error": f"Invalid JSON body: {str(e)}"})
                 }
-
-        else: 
+        else:
             input_data = event
 
         # check if all fields contain data
