@@ -11,8 +11,6 @@ from pathlib import Path
 logger = logging.getLogger()                                                                 #logging
 logger.setLevel(logging.INFO)
 
-MODELS_DIR = Path(__file__).parent.parent / "models"
-
 def legal_basis_to_pillar(legal_basis_code):
     mapping = {
          "HORIZON.1.1": "Pillar 1 - European Research Council (ERC)",
@@ -114,8 +112,8 @@ def lambda_handler(event, context):
     
         
         # loading pkl files
-        cb_best_model = joblib.load(MODELS_DIR/"cb_best_model.pkl")
-        cb_preprocessor = joblib.load(MODELS_DIR/"cb_preprocessor.pkl")
+        cb_best_model = joblib.load("models/cb_best_model.pkl")
+        cb_preprocessor = joblib.load("models/cb_preprocessor.pkl")
     
     
         # applying preprocesinig and transformer
