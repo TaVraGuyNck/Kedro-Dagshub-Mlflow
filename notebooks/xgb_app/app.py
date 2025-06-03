@@ -3,8 +3,8 @@ from datetime import datetime
 import httpx
 from pathlib import Path
 
-# to ensure connection to http api
-api_uri = "https://x58fyx1367.execute-api.eu-west-3.amazonaws.com/prod/predict"
+# GLOBAL SCOPE — runs immediately when app.py is loaded
+api_uri = "https://8icrl41qp8.execute-api.eu-west-3.amazonaws.com/prod/predict"
 
 
 # values fundingScheme for drop-down menu UI: 
@@ -167,13 +167,6 @@ app_ui = ui.page_fillable(
                 )
             ),
             ui.layout_columns(" ",
-                              ui.card(
-                                  ui.card_header("Funding Scheme of the Project"),
-                                  ui.input_select("fundingScheme", " ", choices=fundingScheme_dropdown)
-                              ),
-                              "  "
-            ),
-            ui.layout_columns(" ",
                 ui.input_action_button("submit", "Submit Project Details to Generate Prediction", class_="btn btn-success"),
                 "  "),
             ui.layout_columns(" "
@@ -230,8 +223,8 @@ def server(input, output, session):
             return "Please select the country of the Coordinating Organization."
         if input.pillar() is None or input.pillar() in [" ", "", "  "]:
             return "Please select the correct pillar to which the project belongs."
-        if not input.fundingScheme() or input.fundingScheme() in [" ", "", "  "]:
-            return "Please selcte the applicable funding scheme for the project."
+        #if not input.fundingScheme() or input.fundingScheme() in [" ", "", "  "]:
+            #return "Please selcte the applicable funding scheme for the project."
         if input.duration() is None:
             return "Please enter the duration of the project in days."
         if not isinstance(input.duration(), int):
@@ -273,7 +266,7 @@ def server(input, output, session):
             country_coor = input.countryCoor()
             duration = input.duration()
             number_org = input.numberOrg()
-            fundingScheme = input.fundingScheme()
+            #fundingScheme = input.fundingScheme()
 
             # validated input data in dictionary for api gateway
             data_to_api = {
@@ -283,7 +276,7 @@ def server(input, output, session):
                 "duration": duration,
                 "pillar": pillar,
                 "countryCoor": country_coor,
-                "fundingScheme": fundingScheme
+                #"fundingScheme": fundingScheme
             }
             
             # print to help debugging -payload formed?
@@ -331,18 +324,18 @@ def server(input, output, session):
         return ui.tags.div(
             {"style": "white-space: pre-wrap;"},
         f"""Prediction based on the Project details provided: 
-----------------------------------------------------------------------
+-------------------------------------------------------------------------
 
 RESULT: {result}
-______________________________________________________________________
+____________________________________________________________________
 
-Europe Horizon Pillar:--------------------------------------------- {input.pillar()}
+Europe Horizon Pillar--------------------------------------------- {input.pillar()}
 Country of Coordinating Organization:----------------------------- {input.countryCoor()}
 Total Cost:-------------------------------------------------------- {input.totalCost()}
 EC Max Contribution:------------------------------------------------{input.ecMaxContribution()}
 Duration (in days):------------------------------------------------{input.duration()}
 Number of Participating Organizations:-----------------------------{input.numberOrg()}
-Funding Scheme:-----------------------------------------------------{input.fundingScheme()}
+
 
 
 """)
