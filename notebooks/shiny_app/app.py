@@ -3,8 +3,8 @@ from datetime import datetime
 import httpx
 from pathlib import Path
 
-# GLOBAL SCOPE — runs immediately when app.py is loaded
-api_uri = "https://8icrl41qp8.execute-api.eu-west-3.amazonaws.com/prod/predict"
+# to ensure connection to http api
+api_uri = "https://x58fyx1367.execute-api.eu-west-3.amazonaws.com/prod/predict"
 
 
 # values fundingScheme for drop-down menu UI: 
@@ -273,7 +273,7 @@ def server(input, output, session):
             country_coor = input.countryCoor()
             duration = input.duration()
             number_org = input.numberOrg()
-            #fundingScheme = input.fundingScheme()
+            fundingScheme = input.fundingScheme()
 
             # validated input data in dictionary for api gateway
             data_to_api = {
@@ -283,7 +283,7 @@ def server(input, output, session):
                 "duration": duration,
                 "pillar": pillar,
                 "countryCoor": country_coor,
-                #"fundingScheme": fundingScheme
+                "fundingScheme": fundingScheme
             }
             
             # print to help debugging -payload formed?
@@ -304,7 +304,7 @@ def server(input, output, session):
             if prediction is None:
                 return "No prediction was returned. Response: {}".format(result)
             else:
-                return f"Predicted Startup Delay (in days):\n\n{prediction}"
+                return f"Predicted startup-delay (in days):\n\n{prediction}"
 
         # handle HTTP errors and other exceptions
         except httpx.HTTPStatusError as status_error:
@@ -331,18 +331,18 @@ def server(input, output, session):
         return ui.tags.div(
             {"style": "white-space: pre-wrap;"},
         f"""Prediction based on the Project details provided: 
--------------------------------------------------------------------------------------
+----------------------------------------------------------------------
 
 RESULT: {result}
-__________________________________________________________
+______________________________________________________________________
 
-Europe Horizon Pillar--------------------------------------------- {input.pillar()}
+Europe Horizon Pillar:--------------------------------------------- {input.pillar()}
 Country of Coordinating Organization:----------------------------- {input.countryCoor()}
 Total Cost:-------------------------------------------------------- {input.totalCost()}
 EC Max Contribution:------------------------------------------------{input.ecMaxContribution()}
 Duration (in days):------------------------------------------------{input.duration()}
 Number of Participating Organizations:-----------------------------{input.numberOrg()}
-
+Funding Scheme:-----------------------------------------------------{input.fundingScheme()}
 
 
 """)
