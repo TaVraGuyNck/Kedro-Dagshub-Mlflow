@@ -1,0 +1,12 @@
+{
+    "https://api.shinyapps.io": {
+        "server_url": "https://api.shinyapps.io",
+        "filename": "/workspaces/Kedro-Dagshub-Mlflow/notebooks/xgb_app",
+        "app_url": "https://fmkul.shinyapps.io/prediction_project_startup_delay_europe_horizon_2021_2027_xgb/",
+        "app_id": 14875305,
+        "app_guid": null,
+        "title": "Prediction_Project_Startup_Delay_Europe_Horizon_2021_2027_XGB",
+        "app_mode": "python-shiny",
+        "app_store_version": 1
+    }
+}
