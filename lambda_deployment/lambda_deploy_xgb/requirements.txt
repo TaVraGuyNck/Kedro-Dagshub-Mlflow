@@ -1,0 +1,6 @@
+pandas
+numpy
+xgboost
+scikit-learn~=1.5.1
+joblib
+packaging

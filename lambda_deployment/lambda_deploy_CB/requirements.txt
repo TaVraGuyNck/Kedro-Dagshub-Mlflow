@@ -1,0 +1,11 @@
+numpy
+scikit-learn~=1.5.1
+joblib
+pandas 
+catboost==1.2.8
+xgboost
+boto3
+mlflow
+
+
+
